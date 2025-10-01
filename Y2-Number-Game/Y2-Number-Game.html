@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Y2 Interactive Game — Numbers 1–20 • Add/Subtract • Halves</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+    header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+    h1{margin:0;font-size:20px}
+    .sub{color:var(--muted);font-size:13px}
+    .wrap{max-width:1000px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+    @media(min-width:960px){.wrap{grid-template-columns:1.2fr .8fr}}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .tab{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+    .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    button{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+    button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+    button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+    input,select{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px}
+    .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+    .ok{color:var(--ok)} .err{color:var(--err)} .muted{color:var(--muted)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .chip{padding:10px 12px;border:1px solid #2a3646;border-radius:999px;background:var(--panel);cursor:grab}
+    .grid{display:grid;gap:12px}
+    .stat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+    .stat .tile{background:#0b1220;border:1px solid #253042;border-radius:10px;padding:10px;text-align:center}
+    .shape{width:140px;height:140px;background:#0b1220;border:1px solid #253042;border-radius:12px;display:flex;align-items:center;justify-content:center}
+    .shape svg{width:120px;height:120px}
+    .pill{padding:6px 10px;border:1px solid #253042;border-radius:999px;background:#0b1220}
+    a.link{color:#93c5fd}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Y2 Interactive Game — Numbers 1–20 • Add/Subtract • Halves</h1>
+    <div class="sub">Values: <b>ISSC1</b> Ukhuwwah (help one another), <b>ISIC5</b> step-by-step knowledge, fairness in sharing halves</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="spell">1) Numbers 1–20: Read & Spell</button>
+      <button class="tab" data-tab="hunt">2) Spelling Hunt (Match)</button>
+      <button class="tab" data-tab="dice">3) Dice Add & Subtract</button>
+      <button class="tab" data-tab="halves">4) Halves: Shapes & Numbers</button>
+      <button class="tab" data-tab="quiz">5) Quick Quiz</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Links</h3>
+      <ul class="muted" style="margin-left:18px">
+        <li>Start with salam & short doa for knowledge.</li>
+        <li>Play a counting song 1–20 together (YouTube): <a class="link" href="https://youtu.be/D0Ajq682yrA" target="_blank" rel="noopener">Counting 1–20</a></li>
+        <li><b>Ukhuwwah:</b> Encourage pair help during spelling hunt and dice work.</li>
+        <li><b>Fairness:</b> Halves mean equal parts; link to fair sharing of snacks.</li>
+      </ul>
+      <div class="result">Score: <b id="score">0</b> · Attempts: <b id="tries">0</b></div>
+    </aside>
+  </div>
+
+  <script>
+    const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+    let SCORE=0, TRIES=0; const add=(n)=>{SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES};
+    $$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const id=t.dataset.tab; if(id==='spell') renderSpell(); if(id==='hunt') renderHunt(); if(id==='dice') renderDice(); if(id==='halves') renderHalves(); if(id==='quiz') renderQuiz(); }));
+
+    // WORD LIST 1–20
+    const WORDS = {1:'one',2:'two',3:'three',4:'four',5:'five',6:'six',7:'seven',8:'eight',9:'nine',10:'ten',11:'eleven',12:'twelve',13:'thirteen',14:'fourteen',15:'fifteen',16:'sixteen',17:'seventeen',18:'eighteen',19:'nineteen',20:'twenty'};
+    const toWords = (n)=>WORDS[n];
+
+    // 1) Numbers 1–20: Read & Spell
+    function renderSpell(){
+      const v=$('#view'); v.innerHTML='';
+      let current = Math.floor(Math.random()*20)+1; let mode='digitToWord';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><div class="pill">Mode</div>
+          <select id="mode"><option value="digitToWord">Spell the number</option><option value="wordToDigit">Write the digit</option></select>
+          <button id="new" class="primary">New</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div style="font-size:26px">Prompt: <b id="prompt">${current}</b></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input id="ans" placeholder="Type your answer" style="min-width:280px"/> <button id="check" class="primary">Check</button>
+        </div>
+        <div class="result" id="out"></div>
+        <div class="result muted">Tip: Tricky spellings — <i>eight, eighteen, fifteen</i>. Pair up to help each other (Ukhuwwah).</div>
+      `; v.appendChild(ui);
+      const setPrompt=()=>{ if(mode==='digitToWord'){ $('#prompt').textContent=current; } else { $('#prompt').textContent=toWords(current); } $('#ans').value=''; $('#ans').focus(); $('#out').innerHTML=''; }
+      $('#mode').onchange=(e)=>{ mode=e.target.value; setPrompt(); };
+      $('#new').onclick=()=>{ current=Math.floor(Math.random()*20)+1; setPrompt(); };
+      const norm=(s)=>String(s).toLowerCase().replace(/\s+/g,' ').trim();
+      $('#check').onclick=()=>{
+        if(mode==='digitToWord'){
+          const want = toWords(current); const got = norm($('#ans').value);
+          if(got===want){ add(2); $('#out').innerHTML='<span class="ok">Great spelling!</span>'; } else { add(0); $('#out').innerHTML=`<span class="err">Not yet.</span> It is <b>${want}</b>`; }
+        } else {
+          const got = parseInt($('#ans').value,10); if(got===current){ add(2); $('#out').innerHTML='<span class="ok">Correct digit!</span>'; } else { add(0); $('#out').innerHTML=`<span class="err">Try again.</span> It is <b>${current}</b>`; }
+        }
+        setTimeout(()=>{ current=Math.floor(Math.random()*20)+1; setPrompt(); },900);
+      };
+      setPrompt();
+    }
+
+    // 2) Spelling Hunt (Match) — match 6 random digits to words
+    function renderHunt(){
+      const v=$('#view'); v.innerHTML='';
+      const picks = [...Array(20).keys()].map(i=>i+1).sort(()=>0.5-Math.random()).slice(0,6);
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><div class="muted">Drag the <b>digit</b> to the matching <b>word</b>.</div> <button id="regen">New Cards</button> <button id="check" class="primary">Check</button> <button id="hint" class="warn">Hint</button></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+          <div>
+            <div class="muted">Digits</div>
+            <div id="digits" class="chips"></div>
+          </div>
+          <div>
+            <div class="muted">Words</div>
+            <div id="words" class="grid" style="grid-template-columns:1fr 1fr;gap:10px"></div>
+          </div>
+        </div>
+        <div class="result" id="out"></div>
+        <div class="result muted">Pair support allowed — help your friend find the right word (Ukhuwwah).</div>
+      `; v.appendChild(ui);
+      const render=()=>{
+        const d=$('#digits'); const w=$('#words'); d.innerHTML=''; w.innerHTML='';
+        picks.forEach(n=>{ const c=document.createElement('div'); c.className='chip'; c.textContent=n; c.id='d_'+n; c.draggable=true; c.dataset.n=n; c.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',c.id)); d.appendChild(c); });
+        const shuffled=[...picks].sort(()=>0.5-Math.random());
+        shuffled.forEach(n=>{ const slot=document.createElement('div'); slot.className='chip'; slot.style.minHeight='42px'; slot.dataset.n=n; slot.innerHTML='<b>'+toWords(n)+'</b><div class="muted" style="font-size:12px">drop digit here</div>'; slot.addEventListener('dragover',e=>{e.preventDefault(); slot.style.outline='2px solid var(--ok)'}); slot.addEventListener('dragleave',()=>slot.style.outline='none'); slot.addEventListener('drop',e=>{e.preventDefault(); slot.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip) slot.appendChild(chip); }); w.appendChild(slot); });
+      };
+      render();
+      $('#regen').onclick=render;
+      $('#hint').onclick=()=>{ $('#out').innerHTML='Hint: say the word aloud and clap the sounds (sil-la-bles)!'; };
+      $('#check').onclick=()=>{ let ok=true; $$('#words .chip').forEach(slot=>{ const child=slot.querySelector('#digits .chip'); }); const errs=[]; $$('#words .chip').forEach(slot=>{ const child=[...slot.children].find(el=>el.classList && el.classList.contains('chip') && el.id.startsWith('d_')); const n=Number(slot.dataset.n); if(!child || Number(child.dataset.n)!==n){ ok=false; errs.push(toWords(n)); } }); if(ok){ add(3); $('#out').innerHTML='<span class="ok">All matched — great hunting!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Missed:</span> '+errs.join(', '); }
+      };
+    }
+
+    // Dice roller utility
+    const roll=()=>Math.floor(Math.random()*6)+1;
+
+    // 3) Dice Add & Subtract
+    function renderDice(){
+      const v=$('#view'); v.innerHTML='';
+      let mode='add2'; let a=roll(), b=roll(), c=0, d=0;
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><div class="pill">Mode</div>
+          <select id="mode">
+            <option value="add2">Add 2 dice</option>
+            <option value="add3">Add 3 dice</option>
+            <option value="add4">Add 4 dice</option>
+            <option value="sub2">Subtract (bigger − smaller)</option>
+          </select>
+          <button id="roll" class="primary">Roll</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="pill">Dice:</div>
+          <div id="dice" class="chips"></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input id="ans" placeholder="Your answer" style="min-width:200px"/> <button id="check" class="primary">Check</button>
+        </div>
+        <div class="result" id="out"></div>
+        <div class="result muted">ISIC5: Learning builds step by step — combine or take away carefully. Peer help encouraged.</div>
+      `; v.appendChild(ui);
+      const draw=()=>{
+        a=roll(); b=roll(); c = (mode==='add3'||mode==='add4')? roll():0; d = (mode==='add4')? roll():0;
+        const dice=$('#dice'); dice.innerHTML=''; [a,b,c,d].filter(x=>x>0).forEach(n=>{ const chip=document.createElement('div'); chip.className='chip'; chip.textContent=n; dice.appendChild(chip); }); $('#ans').value=''; $('#out').innerHTML='';
+      };
+      $('#roll').onclick=draw; draw();
+      $('#mode').onchange=(e)=>{ mode=e.target.value; draw(); };
+      $('#check').onclick=()=>{
+        const got=Number($('#ans').value); let want=0; if(mode==='add2') want=a+b; if(mode==='add3') want=a+b+c; if(mode==='add4') want=a+b+c+d; if(mode==='sub2') want=Math.max(a,b)-Math.min(a,b);
+        if(got===want){ add(2); $('#out').innerHTML='<span class="ok">Correct!</span>'; } else { add(0); $('#out').innerHTML=`<span class="err">Try again.</span> It is <b>${want}</b>`; }
+        setTimeout(draw,800);
+      };
+    }
+
+    // 4) Halves: Shapes & Numbers
+    function renderHalves(){
+      const v=$('#view'); v.innerHTML='';
+      let currentN = [2,4,6,8,10][Math.floor(Math.random()*5)];
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+          <div>
+            <div class="muted">Shade one half of the shape</div>
+            <div class="row" style="margin-top:6px">
+              <button id="circle">Circle</button>
+              <button id="square">Square</button>
+              <button id="rect">Rectangle</button>
+            </div>
+            <div class="shape" id="shapeBox"></div>
+            <div class="result" id="shapeOut"></div>
+          </div>
+          <div>
+            <div class="muted">Find half of a number (≤10)</div>
+            <div class="row" style="margin-top:6px">
+              <div class="pill">Number: <b id="num">${currentN}</b></div>
+              <button id="newN">New</button>
+            </div>
+            <div class="row" style="margin-top:6px"><input id="halfAns" placeholder="Half is ..."/> <button id="halfCheck" class="primary">Check</button></div>
+            <div class="result" id="halfOut"></div>
+            <div class="result muted">Fairness: Half means two <b>equal</b> parts. Sharing equally is kindness.</div>
+          </div>
+        </div>
+      `; v.appendChild(ui);
+
+      const drawShape=(type)=>{
+        const box=$('#shapeBox'); box.innerHTML='';
+        if(type==='circle'){
+          box.innerHTML=`<svg viewBox="0 0 120 120">
+            <defs><clipPath id="halfL"><rect x="0" y="0" width="60" height="120"/></clipPath></defs>
+            <circle cx="60" cy="60" r="50" fill="#0b1220" stroke="#253042" stroke-width="2"/>
+            <circle id="fill" cx="60" cy="60" r="50" fill="#22c55e" clip-path="url(#halfL)" opacity="0.0"/>
+            <line x1="60" y1="10" x2="60" y2="110" stroke="#253042"/>
+          </svg>`;
+        } else if(type==='square'){
+          box.innerHTML=`<svg viewBox="0 0 120 120">
+            <rect x="20" y="20" width="80" height="80" fill="#0b1220" stroke="#253042" stroke-width="2"/>
+            <rect id="fill" x="20" y="20" width="40" height="80" fill="#22c55e" opacity="0.0"/>
+            <line x1="60" y1="20" x2="60" y2="100" stroke="#253042"/>
+          </svg>`;
+        } else {
+          box.innerHTML=`<svg viewBox="0 0 160 120">
+            <rect x="20" y="30" width="120" height="60" fill="#0b1220" stroke="#253042" stroke-width="2"/>
+            <rect id="fill" x="20" y="30" width="60" height="60" fill="#22c55e" opacity="0.0"/>
+            <line x1="80" y1="30" x2="80" y2="90" stroke="#253042"/>
+          </svg>`;
+        }
+        const fill = box.querySelector('#fill');
+        let shaded=false; box.onclick=()=>{ shaded=!shaded; fill.setAttribute('opacity', shaded? '0.9':'0.0'); $('#shapeOut').innerHTML = shaded? '<span class="ok">Nice! You shaded one half.</span>' : '<span class="muted">Click again to shade one half.</span>'; if(shaded) add(2); };
+      }
+      $('#circle').onclick=()=>drawShape('circle');
+      $('#square').onclick=()=>drawShape('square');
+      $('#rect').onclick=()=>drawShape('rect');
+      drawShape('circle');
+
+      const newNumber=()=>{ const options=[2,4,6,8,10]; currentN=options[Math.floor(Math.random()*options.length)]; $('#num').textContent=currentN; $('#halfAns').value=''; $('#halfOut').innerHTML=''; };
+      $('#newN').onclick=newNumber;
+      $('#halfCheck').onclick=()=>{ const want=currentN/2; const got=Number($('#halfAns').value); if(got===want){ add(2); $('#halfOut').innerHTML='<span class="ok">Correct — half of '+currentN+' is '+want+'.</span>'; } else { add(0); $('#halfOut').innerHTML='<span class="err">Try again.</span>'; }};
+    }
+
+    // 5) Quick Quiz
+    function renderQuiz(){
+      const v=$('#view'); v.innerHTML='';
+      const qs=[
+        {q:'Spell this number: 12', a:'twelve'},
+        {q:'Write the digit for: fourteen', a:'14'},
+        {q:'Add: 3 + 5', a:'8'},
+        {q:'Subtract: 9 − 7', a:'2'},
+        {q:'Half of 6 is …', a:'3'},
+        {q:'Shade one half: True or False — half means two equal parts', a:'true'}
+      ]; let i=0, ok=0;
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div id="q" style="font-size:22px;margin-bottom:8px"></div>
+        <div class="row"><input id="a" placeholder="Type answer"/> <button id="next" class="primary">Submit</button></div>
+        <div class="result" id="out"></div>
+        <div class="stat"><div class="tile">Correct<br><b id="c">0</b></div><div class="tile">Total<br><b id="t">0</b></div><div class="tile">Teamwork<br><b>Help a friend!</b></div><div class="tile">Aim<br><b>Try 5/6+</b></div></div>
+      `; v.appendChild(ui);
+      const norm=s=>String(s).toLowerCase().replace(/\s+/g,' ').trim();
+      const show=()=>{ $('#q').textContent = `Q${i+1}. ${qs[i].q}`; $('#a').value=''; $('#a').focus(); $('#out').textContent=''; };
+      $('#next').onclick=()=>{ const want=qs[i].a; const got=$('#a').value; if(norm(got)===norm(want)){ ok++; add(2); $('#out').innerHTML='<span class="ok">Correct.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Answer:</span> <b>'+want+'</b>'; } $('#c').textContent=ok; $('#t').textContent=(i+1); i++; if(i<qs.length){ setTimeout(show,600);} else { $('#q').innerHTML='Finished. Score: '+ok+'/'+qs.length; $('#a').disabled=true; $('#next').disabled=true; } };
+      show();
+    }
+
+    // boot
+    renderSpell();
+  </script>
+</body>
+</html>
