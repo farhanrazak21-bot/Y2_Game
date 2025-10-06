@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Y2 Math Interactive — Nature Numbers</title>
+<style>
+  :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--blue:#3b82f6}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+  header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+  h1{margin:0;font-size:20px}
+  .sub{color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .tab{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+  .wrap{max-width:1200px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+  @media(min-width:1050px){.wrap{grid-template-columns:1.4fr .6fr}}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;gap:8px}
+  button{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+  button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+  input,select{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px}
+  .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+  .muted{color:var(--muted)} .ok{color:var(--ok)} .err{color:var(--err)}
+  .grid{display:grid;gap:12px}
+  .two{grid-template-columns:1fr 1fr} .three{grid-template-columns:1fr 1fr 1fr}
+  .panel{background:#0b1220;border:1px solid #253042;border-radius:12px;padding:10px}
+  .slot{border:2px dashed #334155;border-radius:12px;min-height:80px;padding:8px}
+  .chip{padding:10px 12px;border:1px solid #2a3646;border-radius:12px;background:#0b1220;display:inline-flex;gap:8px;align-items:center;cursor:grab;margin:6px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  .big{font-size:22px}
+  .score{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .badge{font-size:12px;padding:2px 6px;border:1px solid #2a3646;border-radius:999px}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Y2 Math Interactive — Counting in Nature</h1>
+    <div class="sub">Skip counting • Estimation • Place Value • Weekly Practice · Eco/Islamic links: learn from Allah's creation; honesty & fairness in counting</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="skip">1) 🌿 Skip Counting</button>
+      <button class="tab" data-tab="estimate">2) 🫙 Estimation</button>
+      <button class="tab" data-tab="place">3) 💰 Place Value Jars</button>
+      <button class="tab" data-tab="practice">4) 🧩 Practice Day</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Values</h3>
+      <div class="panel">
+        <ul class="muted" style="margin-left:18px">
+          <li>Starter: 10 leaves → "How can we count faster?" (lead to 2s/5s/10s)</li>
+          <li>Differentiation: less able use 1s/2s and number lines; more able extend to 100.</li>
+          <li>Islamic link: honesty in counting (zakat/sadaqah) & caring for nature; say Alhamdulillah for creation.</li>
+          <li>Eco link: pairs & groups in nature → learn math patterns from Allah's creation.</li>
+        </ul>
+      </div>
+      <div class="result score"><div class="panel">Score<br><b id="score">0</b></div><div class="panel">Tries<br><b id="tries">0</b></div><div class="panel">Stars<br><b id="stars">★☆☆</b></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+    let SCORE=0, TRIES=0; const add=(n)=>{SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES; const star = SCORE>=24? '★★★': SCORE>=14? '★★☆': SCORE>=7? '★☆☆':'☆☆☆'; $('#stars').textContent=star; };
+    $$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const id=t.dataset.tab; if(id==='skip') renderSkip(); if(id==='estimate') renderEstimate(); if(id==='place') renderPlace(); if(id==='practice') renderPractice(); }));
+
+    // ================= 1) SKIP COUNTING =================
+    function renderSkip(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid two">
+          <div>
+            <div class="muted">Choose step & start — make a forward/back sequence</div>
+            <div class="row" style="margin:8px 0">
+              <label>Step</label>
+              <select id="step">
+                <option value="1">1s (🐜)</option>
+                <option value="2">2s (🪨 pairs)</option>
+                <option value="5">5s (🌸 petals)</option>
+                <option value="10">10s (🌰 seeds)</option>
+              </select>
+              <label>Start</label>
+              <input id="start" type="number" value="0" style="width:100px"/>
+              <button class="primary" id="go">Generate</button>
+            </div>
+            <div class="panel" id="seq"></div>
+            <div class="row" style="margin-top:8px"><button id="quiz" class="primary">Quick Quiz</button></div>
+            <div class="result" id="out1"></div>
+            <div class="panel muted">Eco Number Hunt idea: group real objects outside in 2s/5s/10s and count aloud forward then backward.</div>
+          </div>
+          <div>
+            <div class="muted">Fill the missing numbers</div>
+            <div class="panel" id="fill"></div>
+            <div class="row" style="margin-top:8px"><button id="newFill" class="primary">New Puzzle</button> <button id="checkFill" class="primary">Check</button></div>
+            <div class="result" id="out2"></div>
+          </div>
+        </div>`;
+      v.appendChild(ui);
+      // generate forward/back
+      $('#go').onclick=()=>{
+        const step=Number($('#step').value), start=Number($('#start').value);
+        const f=[], len=10; for(let i=0;i<=len;i++) f.push(start+i*step);
+        const b=[...f].reverse();
+        $('#seq').innerHTML=`<b>Forward:</b> ${f.join(', ')}<br><b>Backward:</b> ${b.join(', ')}`;
+      };
+      // missing-number puzzle
+      function genFill(){
+        const steps=[1,2,5,10]; const s=steps[Math.floor(Math.random()*steps.length)];
+        const start=Math.floor(Math.random()*20); const arr=[start]; for(let i=1;i<7;i++) arr.push(start+i*s);
+        const blanks=new Set([1,3,5].filter(()=>Math.random()>0.3));
+        const box=$('#fill'); box.innerHTML=''; arr.forEach((v,i)=>{
+          const span=document.createElement('span'); span.className='chip mono';
+          if(blanks.has(i)){ span.innerHTML=`<input data-i="${i}" style="width:80px" placeholder="?"/>`; }
+          else { span.textContent=v; }
+          box.appendChild(span);
+        }); box.dataset.arr=JSON.stringify(arr);
+      }
+      genFill(); $('#newFill').onclick=genFill;
+      $('#checkFill').onclick=()=>{
+        const want=JSON.parse($('#fill').dataset.arr); let ok=true, errs=[]; $$('#fill input').forEach(inp=>{ const i=+inp.dataset.i; const got=Number(inp.value); if(isNaN(got)||got!==want[i]){ ok=false; errs.push(i+1); } });
+        if(ok){ add(5); $('#out2').innerHTML='<span class="ok">Great skip counting!</span>'; } else { add(0); $('#out2').innerHTML='<span class="err">Recheck positions:</span> '+errs.join(', '); }
+      };
+      // quick quiz next term
+      $('#quiz').onclick=()=>{
+        const step=Number($('#step').value)||2; const base=Math.floor(Math.random()*20); const seq=[base, base+step, base+2*step, base+3*step];
+        const q=seq.slice(0,3).join(', '); const ans=seq[3];
+        const inputId='ans_'+Math.random().toString(36).slice(2,7);
+        $('#out1').innerHTML=`What comes next: <span class="mono">${q}, __</span> <input id="${inputId}" style="width:90px"/> <button class="primary" id="btn">Check</button>`;
+        $('#btn').onclick=()=>{ const got=Number($('#'+inputId).value); if(got===ans){ add(3); $('#out1').innerHTML='<span class="ok">Correct!</span>'; } else { add(0); $('#out1').innerHTML='<span class="err">Answer:</span> '+ans; } };
+      };
+    }
+
+    // ================= 2) ESTIMATION =================
+    function renderEstimate(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid two">
+          <div>
+            <div class="muted">Make a quick estimate, then reveal and compare</div>
+            <div class="row"><button id="newJar" class="primary">New Jar</button></div>
+            <div class="panel" id="jar">Click New Jar...</div>
+            <div class="row" style="margin-top:8px">
+              <input id="guess" type="number" placeholder="Your estimate" style="width:160px"/>
+              <button id="check" class="primary">Check</button>
+            </div>
+            <div class="result" id="outE"></div>
+            <div class="panel muted">Islamic link: fairness & honesty in counting (zakat/sadaqah). Eco: estimate to avoid waste (recycling, food portions).</div>
+          </div>
+          <div>
+            <div class="muted">Count by groups (1s/2s/5s/10s)</div>
+            <div class="row">
+              <button data-g="1" class="primary">×1</button>
+              <button data-g="2" class="primary">×2</button>
+              <button data-g="5" class="primary">×5</button>
+              <button data-g="10" class="primary">×10</button>
+            </div>
+            <div class="panel" id="groups">Choose a grouping to see counting strategy.</div>
+          </div>
+        </div>`;
+      v.appendChild(ui);
+      let total=0;
+      function drawJar(){ total = 20 + Math.floor(Math.random()*81); // 20..100
+        const icons=['🍃','🪨','🌸','🐞'];
+        let html=''; for(let i=0;i<total;i++){ html += '<span style="font-size:22px;margin:2px">'+icons[i%icons.length]+'</span>'; }
+        $('#jar').innerHTML=html; $('#outE').textContent=''; $('#guess').value=''; $('#groups').textContent='Choose group size to show how to count.';
+      }
+      $('#newJar').onclick=drawJar; drawJar();
+      $('#check').onclick=()=>{ const g=Number($('#guess').value); if(!g&&g!==0){ $('#outE').textContent='Enter an estimate.'; return; }
+        const diff=Math.abs(g-total); let msg=''; if(diff===0){ msg='🎉 Perfect! Exactly '+total; add(6); }
+        else if(diff<=5){ msg='👍 Very close! Off by '+diff+'. (Actual: '+total+')'; add(3); }
+        else { msg='Actual is '+total+'. Keep practicing estimation!'; add(1); }
+        $('#outE').textContent=msg; };
+      $('#view').addEventListener('click',e=>{ const g=e.target.dataset.g; if(!g) return; const n=Number(g); if(!total) return; let parts=Math.floor(total/n), rem=total%n; let chunks=[]; for(let i=0;i<parts;i++) chunks.push(n); if(rem) chunks.push(rem);
+        $('#groups').innerHTML='Counting by '+n+': '+chunks.map(x=>'['+x+']').join(' ')+' → total '+total; });
+    }
+
+    // ================= 3) PLACE VALUE =================
+    function renderPlace(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid two">
+          <div>
+            <div class="muted">Enter a 2-digit number, then drag coins into the correct jars</div>
+            <div class="row" style="margin:6px 0">
+              <input id="num" type="number" min="10" max="99" placeholder="e.g. 42" style="width:140px"/>
+              <button id="make" class="primary">Make Coins</button>
+              <button id="clear" class="warn">Reset</button>
+            </div>
+            <div class="panel" id="coins">Enter a number to create coins.</div>
+            <div class="result" id="outP"></div>
+            <div class="panel muted">Value link: every sadaqah counts — small (ones) and big (tens).</div>
+          </div>
+          <div>
+            <div class="muted">Jars</div>
+            <div class="grid two">
+              <div><div class="muted">TENS</div><div id="jarT" class="slot" data-type="T"></div></div>
+              <div><div class="muted">ONES</div><div id="jarO" class="slot" data-type="O"></div></div>
+            </div>
+          </div>
+        </div>`;
+      v.appendChild(ui);
+
+      function ddHook(el){ el.addEventListener('dragover',e=>{e.preventDefault(); el.style.outline='2px solid var(--ok)'}); el.addEventListener('dragleave',()=>el.style.outline='none'); el.addEventListener('drop',e=>{e.preventDefault(); el.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip) el.appendChild(chip); }); }
+      ddHook($('#jarT')); ddHook($('#jarO'));
+
+      $('#make').onclick=()=>{
+        const n=Number($('#num').value); if(!(n>=10&&n<=99)){ $('#outP').textContent='Enter a 2-digit number (10–99).'; return; }
+        const tens=Math.floor(n/10), ones=n%10; const C=$('#coins'); C.innerHTML='';
+        // make tens coins labelled 10 and ones coins labelled 1
+        for(let i=0;i<tens;i++){ const el=document.createElement('div'); el.className='chip'; el.textContent='🟡 10'; el.draggable=true; el.dataset.v='T'; el.id='t_'+i+'_'+Date.now(); el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.id)); C.appendChild(el);} 
+        for(let i=0;i<ones;i++){ const el=document.createElement('div'); el.className='chip'; el.textContent='🟢 1'; el.draggable=true; el.dataset.v='O'; el.id='o_'+i+'_'+Date.now(); el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.id)); C.appendChild(el);} 
+        $('#outP').textContent='Drag yellow 10s to TENS, green 1s to ONES, then press Check.';
+        // add check button
+        if(!$('#btnCheck')){
+          const b=document.createElement('button'); b.className='primary'; b.id='btnCheck'; b.textContent='Check'; $('#outP').after(b); b.onclick=check;
+        }
+        function check(){
+          const okT=$$('#jarT .chip').every(c=>c.textContent.includes('10'));
+          const okO=$$('#jarO .chip').every(c=>c.textContent.includes('1')&&!c.textContent.includes('10'));
+          // also ensure all coins moved
+          const allMoved = $$('#coins .chip').length===0; 
+          if(okT&&okO&&allMoved){ add(6); $('#outP').innerHTML='<span class="ok">Correct placement! Now read it aloud: '+n+' = '+tens+' tens and '+ones+' ones.</span>'; }
+          else { add(0); let msg='Recheck: '; if(!okT) msg+='some 10s not in TENS. '; if(!okO) msg+='some 1s not in ONES. '; if(!allMoved) msg+='move all coins to jars. '; $('#outP').innerHTML='<span class="err">'+msg+'</span>'; }
+        }
+      };
+      $('#clear').onclick=()=>{ $('#coins').textContent='Enter a number to create coins.'; $('#jarT').innerHTML=''; $('#jarO').innerHTML=''; $('#outP').textContent=''; const btn=$('#btnCheck'); if(btn) btn.remove(); };
+    }
+
+    // ================= 4) PRACTICE DAY =================
+    function renderPractice(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><button id="newSet" class="primary">New Mixed Set</button> <button id="checkSet" class="primary">Check Answers</button> <button id="hint" class="warn">Hints</button></div>
+        <div class="grid three" id="set" style="margin-top:8px"></div>
+        <div class="result" id="out"></div>
+        <div class="panel muted">Plenary prompts: "Count these in 2s/5s/10s?" • "Estimate before counting" • "Tens & ones of 12?"</div>`;
+      v.appendChild(ui);
+
+      function qSkip(){ const step=[1,2,5,10][Math.floor(Math.random()*4)]; const start=Math.floor(Math.random()*20); const seq=[start, start+step, start+2*step, start+3*step]; return {t:'Next in '+step+'s: '+seq.slice(0,3).join(', ')+', __', a:String(seq[3])}; }
+      function qEstimate(){ const total=20+Math.floor(Math.random()*81); return {t:'Estimate near: '+total+' (±5 accepted)', a:String(total), tol:5}; }
+      function qPlace(){ const n=10+Math.floor(Math.random()*90); const tens=Math.floor(n/10), ones=n%10; return {t:'Tens/Ones of '+n+': __ tens, __ ones', a:tens+'|'+ones, place:true}; }
+
+      let set=[]; function gen(){ set=[]; for(let i=0;i<9;i++){ const r=Math.random(); set.push(r<0.34?qSkip(): r<0.67?qEstimate(): qPlace()); } draw(); $('#out').textContent=''; }
+      function draw(){ const S=$('#set'); S.innerHTML=''; set.forEach((q,i)=>{ const card=document.createElement('div'); card.className='panel'; if(q.place){ card.innerHTML=`<div class="badge">Q${i+1}</div><div class="big">${q.t}</div><div class="row"><input data-i="${i}" data-k="t" placeholder="tens" style="width:90px"/><input data-i="${i}" data-k="o" placeholder="ones" style="width:90px"/></div>`; }
+        else { card.innerHTML=`<div class="badge">Q${i+1}</div><div class="big">${q.t}</div><input data-i="${i}" placeholder="Answer" style="width:160px"/>`; }
+        S.appendChild(card); }); }
+      gen();
+      $('#newSet').onclick=gen;
+      $('#hint').onclick=()=>{ $('#out').innerHTML='Hints: keep equal steps; estimates within ±5 are OK; tens = left digit, ones = right digit.'; };
+      $('#checkSet').onclick=()=>{ let ok=0; $$('#set .panel').forEach((card,idx)=>{
+          const q=set[idx]; if(q.place){ const ti=card.querySelector('input[data-k="t"]'); const oi=card.querySelector('input[data-k="o"]'); const want=q.a.split('|'); const good = Number(ti.value)===Number(want[0]) && Number(oi.value)===Number(want[1]); if(good){ ok++; ti.style.borderColor='#14532d'; oi.style.borderColor='#14532d'; } else { ti.style.borderColor='#6b1c1c'; oi.style.borderColor='#6b1c1c'; }
+          } else if(q.tol){ const inp=card.querySelector('input'); const good = Math.abs(Number(inp.value)-Number(q.a))<=q.tol; if(good){ ok++; inp.style.borderColor='#14532d'; } else { inp.style.borderColor='#6b1c1c'; }
+          } else { const inp=card.querySelector('input'); const good = Number(inp.value)===Number(q.a); if(good){ ok++; inp.style.borderColor='#14532d'; } else { inp.style.borderColor='#6b1c1c'; }
+          }
+      }); if(ok===set.length){ add(8); $('#out').innerHTML='<span class="ok">Perfect set — awesome work!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Correct so far:</span> '+ok+' / '+set.length; }
+      };
+    }
+
+    // boot
+    renderSkip();
+  </script>
+</body>
+</html>
