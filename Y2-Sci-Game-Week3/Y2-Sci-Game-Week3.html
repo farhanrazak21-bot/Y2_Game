@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Y2 Science — Malaysian Habitats Interactive</title>
+<style>
+  :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+  header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+  h1{margin:0;font-size:20px}
+  .sub{color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .tab{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+  .wrap{max-width:1180px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+  @media(min-width:1100px){.wrap{grid-template-columns:1.45fr .55fr}}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+  .panel{background:#0b1220;border:1px solid #253042;border-radius:12px;padding:10px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+  .muted{color:var(--muted)} .ok{color:var(--ok)} .err{color:var(--err)}
+  button{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+  button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+  input,select,textarea{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px;width:100%}
+  .stage{min-height:320px;display:flex;align-items:center;justify-content:center;background:#0b1220;border:1px solid #253042;border-radius:14px;padding:12px}
+  .grid{display:grid;gap:10px}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .tile{background:#0f1a2a;border:1px solid #263246;border-radius:12px;padding:12px;text-align:center;cursor:pointer}
+  .tile.sel{outline:3px solid #22c55e}
+  .drop{min-height:84px;border:2px dashed #334155;border-radius:12px;padding:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border:1px solid #2a3646;border-radius:999px;background:#0b1220;margin:6px;cursor:grab}
+  .badge{font-size:12px;padding:2px 6px;border:1px solid #2a3646;border-radius:999px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  .tiny{font-size:12px;color:#9aa4b2}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Y2 Science — Malaysian Habitats Interactive</h1>
+    <div class="sub">Rainforest • Mangroves • Coral Reefs • ISPH4: Respect creation • ECOL4: Habitats & relationships</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="lead">0) 🌏 Lead‑in</button>
+      <button class="tab" data-tab="l1">1) 🌳 Match Habitat ↔ Animal</button>
+      <button class="tab" data-tab="l2">2) 🌧️ Rainforest Sounds & Facts</button>
+      <button class="tab" data-tab="l3">3) 🌊 Mangrove Sort</button>
+      <button class="tab" data-tab="l4">4) 🐠 Coral Reef Care</button>
+      <button class="tab" data-tab="log">5) 📝 Field Log (Local Habitat)</button>
+      <button class="tab" data-tab="quiz">6) 🧩 Recap Quiz</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Values</h3>
+      <div class="panel">
+        <ul class="muted" style="margin-left:18px">
+          <li>Warm greeting + short <b>dua</b> for knowledge.</li>
+          <li><b>ISPH4</b>: Trees, animals & water are trusts (amanah). Handle habitats gently.</li>
+          <li><b>ECOL4</b>: Each organism fits its <b>habitat</b>; relationships form food chains.</li>
+          <li>Differentiation: fewer choices & bigger tiles for less‑able; add extra animals/facts for more‑able.</li>
+        </ul>
+      </div>
+      <div class="result panel">Score: <b id="score">0</b> · Tries: <b id="tries">0</b> · Stars: <b id="stars">☆☆☆</b></div>
+    </aside>
+  </div>
+
+<script>
+const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+let SCORE=0, TRIES=0; function add(n){SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES; $('#stars').textContent= SCORE>=36?'★★★':SCORE>=20?'★★☆':SCORE>=10?'★☆☆':'☆☆☆';}
+$$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const id=t.dataset.tab; ({lead:renderLead,l1:renderL1,l2:renderL2,l3:renderL3,l4:renderL4,log:renderLog,quiz:renderQuiz}[id])(); }));
+
+function renderLead(){ const v=$('#view'); v.innerHTML=`
+  <div class="stage"><div>
+    <p class="muted">Ask pupils:</p>
+    <ul>
+      <li>What is a <b>habitat</b>? Can you name any in Malaysia?</li>
+      <li>Rainforest • Mangroves • Coral reef — what animals live there?</li>
+      <li>Why should we <b>respect</b> habitats (ISPH4)?</li>
+    </ul>
+    <div class="result">Play tabs in order. Teacher note: emphasise gentle behaviour and gratitude for creation.</div>
+  </div></div>`; }
+
+// Lesson 1 — Match Habitat ↔ Animal (drag chips to bins)
+function renderL1(){ const v=$('#view'); v.innerHTML='';
+  const ui=document.createElement('div'); ui.innerHTML=`
+    <div class="row"><button class="primary" id="new">New Set</button> <button class="primary" id="check">Check</button></div>
+    <div class="panel" style="margin-top:8px">
+      <div class="badge">Drag each <b>animal</b> to its Malaysian <b>habitat</b></div>
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <div style="flex:1"><div class="badge">Animals</div><div id="pool" class="drop"></div></div>
+        <div style="flex:1"><div class="badge">🌳 Rainforest</div><div id="rain" class="drop"></div></div>
+        <div style="flex:1"><div class="badge">🌿 Mangroves</div><div id="mang" class="drop"></div></div>
+        <div style="flex:1"><div class="badge">🐠 Coral Reef</div><div id="reef" class="drop"></div></div>
+      </div>
+    </div>
+    <div class="result tiny">ISPH4: Remind pupils — do not harm trees/animals. Habitats are a trust (amanah).</div>
+    <div class="result" id="out"></div>`; v.appendChild(ui);
+  const animals=[
+    {t:'🦧 Orangutan', h:'rain'}, {t:'🐅 Malayan Tiger', h:'rain'}, {t:'🦎 Horned Lizard', h:'rain'},
+    {t:'🦀 Fiddler Crab', h:'mang'}, {t:'🦆 Heron', h:'mang'}, {t:'🐟 Mudskipper', h:'mang'},
+    {t:'🐠 Clownfish', h:'reef'}, {t:'🪸 Sea Anemone', h:'reef'}, {t:'🐢 Green Turtle', h:'reef'}
+  ];
+  function chip(a){ const d=document.createElement('div'); d.className='chip'; d.textContent=a.t; d.id='a_'+a.t; d.draggable=true; d.dataset.h=a.h; d.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',d.id)); return d; }
+  function hookDZ(id){ const dz=$('#'+id); dz.addEventListener('dragover',e=>{e.preventDefault(); dz.style.outline='2px solid var(--ok)'}); dz.addEventListener('dragleave',()=>dz.style.outline='none'); dz.addEventListener('drop',e=>{e.preventDefault(); dz.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const el=document.getElementById(id); if(el) dz.appendChild(el); }); }
+  function draw(){ const pool=$('#pool'); pool.innerHTML=''; animals.sort(()=>Math.random()-0.5).forEach(a=>pool.appendChild(chip(a))); ['rain','mang','reef'].forEach(id=>$('#'+id).innerHTML=''); }
+  ['pool','rain','mang','reef'].forEach(hookDZ); draw();
+  $('#new').onclick=draw; $('#check').onclick=()=>{ let ok=true; ['rain','mang','reef'].forEach(id=>{ $$('#'+id+' .chip').forEach(c=>{ if(c.dataset.h!==id) ok=false; }); }); if(ok){ add(8); $('#out').innerHTML='<span class="ok">Excellent! Animals fit the habitats where they find food & shelter. (ECOL4)</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Some animals are in the wrong home — try again.</span>'; } };
+}
+
+// Lesson 2 — Rainforest sounds & cloze facts (choose right tiles)
+function renderL2(){ const v=$('#view'); v.innerHTML='';
+  const ui=document.createElement('div'); ui.innerHTML=`
+    <div class="row"><button class="primary" id="new">New Questions</button> <button class="primary" id="check">Check</button></div>
+    <div class="panel" style="margin-top:8px">
+      <div class="badge">Match the <b>sound</b> to the place</div>
+      <div class="grid grid-3" id="sound"></div>
+    </div>
+    <div class="panel" style="margin-top:8px">
+      <div class="badge">Fill the rainforest facts (tap to choose)</div>
+      <div id="cloze" class="grid"></div>
+    </div>
+    <div class="result" id="out"></div>`; v.appendChild(ui);
+  const sounds=[
+    {q:'"Rain + birds + monkeys" →', opts:['Rainforest','City','Desert'], a:'Rainforest'},
+    {q:'"Waves + bubbles + fish" →', opts:['Coral Reef','School','Farm'], a:'Coral Reef'},
+    {q:'"Wind + mud + shore birds" →', opts:['Mangroves','Playground','Mountain'], a:'Mangroves'}
+  ];
+  const clozes=[
+    {q:'Rainforests are <b>hot</b> and get lots of <b>_____</b>.', opts:['rain','snow','smoke'], a:'rain'},
+    {q:'Many animals live high in the <b>_____</b>.', opts:['canopy','garage','kitchen'], a:'canopy'},
+    {q:'Trees give us <b>_____</b> to breathe.', opts:['oxygen','plastic','sand'], a:'oxygen'}
+  ];
+  function draw(){ const S=$('#sound'); S.innerHTML=''; sounds.sort(()=>Math.random()-0.5).forEach((s,i)=>{ const box=document.createElement('div'); box.className='tile'; box.innerHTML=`<div style="font-size:13px">${s.q}</div><div class="row">${s.opts.map(o=>`<button class="opt" data-i="${i}" data-v="${o}">${o}</button>`).join('')}</div>`; S.appendChild(box); });
+    const C=$('#cloze'); C.innerHTML=''; clozes.sort(()=>Math.random()-0.5).forEach((c,i)=>{ const box=document.createElement('div'); box.className='panel'; box.innerHTML=`<div>${c.q}</div><div class="row" style="margin-top:6px">${c.opts.map(o=>`<button class="opt" data-i="c${i}" data-v="${o}">${o}</button>`).join('')}</div>`; C.appendChild(box); });
+    $$('.opt').forEach(b=>b.onclick=()=>{ const sibs=$$(`.opt[data-i='${b.dataset.i}']`,v); sibs.forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); }); }
+  draw();
+  $('#new').onclick=draw; $('#check').onclick=()=>{ let ok=0, total= sounds.length+clozes.length; sounds.forEach((s,i)=>{ const pick=($$(".opt.sel[data-i='"+i+"']")[0]||{}).dataset.v; if(pick===s.a) ok++; }); clozes.forEach((c,i)=>{ const pick=($$(".opt.sel[data-i='c"+i+"']")[0]||{}).dataset.v; if(pick===c.a) ok++; }); if(ok===total){ add(8); $('#out').innerHTML='<span class="ok">Great rainforest knowledge!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Correct:</span> '+ok+' / '+total+' — review and try again.'; } };
+}
+
+// Lesson 3 — Mangrove Sort (drag to Mangrove vs Not)
+function renderL3(){ const v=$('#view'); v.innerHTML='';
+  const ui=document.createElement('div'); ui.innerHTML=`
+    <div class="row"><button class="primary" id="new">New Animals</button> <button class="primary" id="check">Check</button></div>
+    <div class="panel" style="margin-top:8px">
+      <div class="badge">Drag to <b>MANGROVE</b> or <b>NOT</b></div>
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <div style="flex:1"><div class="badge">Animals</div><div id="pool" class="drop"></div></div>
+        <div style="flex:1"><div class="badge">🌿 Mangrove</div><div id="mg" class="drop"></div></div>
+        <div style="flex:1"><div class="badge">🚫 Not Mangrove</div><div id="not" class="drop"></div></div>
+      </div>
+    </div>
+    <div class="result tiny">Discuss: How can we <b>protect</b> mangroves? (No littering, keep water clean.)</div>
+    <div class="result" id="out"></div>`; v.appendChild(ui);
+  const items=[
+    {t:'🦀 Crab', m:true},{t:'🐟 Mudskipper', m:true},{t:'🦆 Heron', m:true},
+    {t:'🦒 Giraffe', m:false},{t:'🐫 Camel', m:false},{t:'🐻‍❄️ Polar Bear', m:false}
+  ];
+  function chip(a){ const d=document.createElement('div'); d.className='chip'; d.textContent=a.t; d.id='i_'+a.t; d.draggable=true; d.dataset.m=a.m?'mg':'not'; d.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',d.id)); return d; }
+  function hookDZ(id){ const dz=$('#'+id); dz.addEventListener('dragover',e=>{e.preventDefault(); dz.style.outline='2px solid var(--ok)'}); dz.addEventListener('dragleave',()=>dz.style.outline='none'); dz.addEventListener('drop',e=>{e.preventDefault(); dz.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const el=document.getElementById(id); if(el) dz.appendChild(el); }); }
+  function draw(){ const pool=$('#pool'); pool.innerHTML=''; items.sort(()=>Math.random()-0.5).forEach(a=>pool.appendChild(chip(a))); ['mg','not'].forEach(id=>$('#'+id).innerHTML=''); }
+  ['pool','mg','not'].forEach(hookDZ); draw();
+  $('#new').onclick=draw; $('#check').onclick=()=>{ let ok=true; ['mg','not'].forEach(id=>{ $$('#'+id+' .chip').forEach(c=>{ if(c.dataset.m!==id) ok=false; }); }); if(ok){ add(8); $('#out').innerHTML='<span class="ok">Nice work — mangroves protect coasts & animals. (ECOL4)</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Some animals are in the wrong box — try again.</span>'; } };
+}
+
+// Lesson 4 — Coral Reef Care (pick helpful actions)
+function renderL4(){ const v=$('#view'); v.innerHTML='';
+  const ui=document.createElement('div'); ui.innerHTML=`
+    <div class="row"><button class="primary" id="new">New Actions</button> <button class="primary" id="check">Check</button></div>
+    <div class="stage" id="reefStage"></div>
+    <div class="result tiny">ISPH4: Water is a sacred trust — keep seas clean for Allah's creation.</div>
+    <div class="result" id="out"></div>`; v.appendChild(ui);
+  const acts=[
+    {t:'Do not litter 🚯', ok:true},
+    {t:'Pick up plastic on beach 🧤', ok:true},
+    {t:'Break coral for souvenir ❌', ok:false},
+    {t:'Pour oil/chemicals in drain ❌', ok:false},
+    {t:'Snorkel gently, no touching 🐠', ok:true},
+    {t:'Feed fish with bread ❌', ok:false}
+  ];
+  function draw(){ const host=$('#reefStage'); host.innerHTML='';
+    const left=document.createElement('div'); left.style.flex='1'; left.innerHTML=`<div class="panel">Choose actions that <b>protect</b> coral reefs</div>`;
+    const right=document.createElement('div'); right.style.flex='1'; const list=document.createElement('div'); list.className='grid';
+    acts.sort(()=>Math.random()-0.5).forEach(a=>{ const d=document.createElement('div'); d.className='tile'; d.textContent=a.t; d.dataset.ok=a.ok; d.onclick=()=>d.classList.toggle('sel'); list.appendChild(d); });
+    right.appendChild(list); host.append(left,right);
+  }
+  draw();
+  $('#new').onclick=draw; $('#check').onclick=()=>{ let ok=true; $$('#reefStage .tile').forEach(d=>{ if(d.classList.contains('sel')!== (d.dataset.ok==='true')) ok=false; }); if(ok){ add(8); $('#out').innerHTML='<span class="ok">Beautiful! Those choices keep reefs healthy. 🪸</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Choose only the actions that help reefs.</span>'; } };
+}
+
+// Field Log — simple form to record local habitat
+function renderLog(){ const v=$('#view'); v.innerHTML=`
+  <div class="panel">
+    <div class="badge">Field Log — Observe a local habitat</div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div>
+        <label>Habitat name</label>
+        <input id="hName" placeholder="e.g., school garden / park edge"/>
+      </div>
+      <div>
+        <label>Location</label>
+        <input id="hLoc" placeholder="e.g., behind canteen"/>
+      </div>
+      <div>
+        <label>What plants did you see?</label>
+        <textarea id="hPlants" rows="3" placeholder="trees, grass, flowers..."></textarea>
+      </div>
+      <div>
+        <label>What animals/insects did you see?</label>
+        <textarea id="hAnimals" rows="3" placeholder="ants, butterflies, birds..."></textarea>
+      </div>
+      <div>
+        <label>How can we protect this place? (ISPH4)</label>
+        <textarea id="hProtect" rows="3" placeholder="do not litter, water plants, no stepping on roots..."></textarea>
+      </div>
+      <div>
+        <label>Draw a small symbol 🖍️ (optional)</label>
+        <input id="hSymbol" placeholder="🌳 🐦 🐜"/>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px"><button class="primary" id="save">Save Log</button> <button class="warn" id="clear">Clear</button></div>
+    <div class="result tiny">Tip: Pupils can copy their answers to exercise books or the teacher can print to PDF via browser.</div>
+    <div class="result" id="logOut"></div>
+  </div>`;
+  $('#save').onclick=()=>{ const data={name:$('#hName').value,loc:$('#hLoc').value,plants:$('#hPlants').value,animals:$('#hAnimals').value,protect:$('#hProtect').value,symbol:$('#hSymbol').value,ts:new Date().toLocaleString()}; localStorage.setItem('y2_hab_log',JSON.stringify(data)); add(4); $('#logOut').innerHTML='<span class="ok">Saved! You can print this page to keep records.</span>'; };
+  $('#clear').onclick=()=>{ localStorage.removeItem('y2_hab_log'); $('#hName').value=$('#hLoc').value=$('#hPlants').value=$('#hAnimals').value=$('#hProtect').value=$('#hSymbol').value=''; $('#logOut').textContent=''; };
+  const saved=localStorage.getItem('y2_hab_log'); if(saved){ const d=JSON.parse(saved); $('#hName').value=d.name||''; $('#hLoc').value=d.loc||''; $('#hPlants').value=d.plants||''; $('#hAnimals').value=d.animals||''; $('#hProtect').value=d.protect||''; $('#hSymbol').value=d.symbol||''; $('#logOut').innerHTML='<span class="ok">Loaded saved log from '+(d.ts||'before')+'</span>'; }
+}
+
+// Recap Quiz — 8 questions
+function renderQuiz(){ const v=$('#view'); v.innerHTML='';
+  const ui=document.createElement('div'); ui.innerHTML=`
+    <div class="row"><button class="primary" id="newQ">New 8‑Q Set</button> <button class="primary" id="checkQ">Check</button> <button class="warn" id="hint">Hints</button></div>
+    <div id="qs" style="margin-top:8px"></div>
+    <div id="out" class="result"></div>`; v.appendChild(ui);
+  const bank=[
+    {t:'Orangutans live in Malaysia\'s rainforests.', a:'T'},
+    {t:'Mangroves grow in muddy water near the sea.', a:'T'},
+    {t:'Clownfish and sea anemones live on coral reefs.', a:'T'},
+    {t:'We should take coral home as a souvenir.', a:'F'},
+    {t:'Habitats give animals food and shelter.', a:'T'},
+    {t:'Throwing rubbish in rivers keeps mangroves healthy.', a:'F'},
+    {t:'Rainforests have a leafy roof called the canopy.', a:'T'},
+    {t:'Respecting habitats is part of our amanah (trust).', a:'T'}
+  ];
+  let set=[]; function gen(){ set=[...bank].sort(()=>Math.random()-0.5).slice(0,8); draw(); $('#out').textContent=''; }
+  function draw(){ const host=$('#qs'); host.innerHTML=''; set.forEach((q,i)=>{ host.innerHTML+=`<div class="panel" style="margin-bottom:8px"><div><span class="badge">Q${i+1}</span> ${q.t}</div>
+    <div class="row"><label><input type="radio" name="q${i}" value="T"> True</label> <label><input type="radio" name="q${i}" value="F"> False</label></div></div>`; }); }
+  gen();
+  $('#newQ').onclick=gen; $('#hint').onclick=()=>$('#out').innerHTML='Hints: match animals to rainforest/mangrove/reef; keep water clean; canopy = leafy roof.';
+  $('#checkQ').onclick=()=>{ let ok=0; set.forEach((q,i)=>{ const pick=($$("input[name='q"+i+"']:checked")[0]||{}).value; if(pick===q.a) ok++;}); if(ok===set.length){ add(10); $('#out').innerHTML='<span class="ok">Super work — full marks!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Correct:</span> '+ok+' / '+set.length+' — Review habitats & care.</span>'; }
+  };
+}
+
+// boot
+renderLead();
+</script>
+</body>
+</html>
